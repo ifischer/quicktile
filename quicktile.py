@@ -54,7 +54,7 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 try:
     from Xlib import X
     from Xlib.display import Display
-    from Xlib.error import BadAccess
+    from Xlib.error import BadAccess, CatchError
     from Xlib.XK import string_to_keysym
     XLIB_PRESENT = True #: Indicates whether python-xlib was found
 except ImportError:
@@ -126,6 +126,8 @@ POSITIONS = {
     ),
     'maximize'            : 'toggleMaximize',
     'monitor-switch'      : 'cycleMonitors',
+    'move-to-left-display': 'moveleft',
+    'move-to-right-display': 'moveright',
     'vertical-maximize'   : ((None,      0,   None,      1),),
     'horizontal-maximize' : ((0,      None,   1,      None),),
     'move-to-center'      : 'moveCenter',
@@ -191,7 +193,13 @@ class WindowManager(object):
         self.commands = commands
         self.ignore_workarea = ignore_workarea
 
-    def cmd_cycleMonitors(self, window=None):
+    def cmd_moveleft(self, window=None, dir=None):
+        self.cmd_cycleMonitors(dir="left")
+
+    def cmd_moveright(self, window=None, dir=None):
+        self.cmd_cycleMonitors(dir="right")
+
+    def cmd_cycleMonitors(self, window=None, dir=None):
         """
         Cycle the specified window (the active window if none was explicitly
         specified) between monitors while leaving the position within the monitor
@@ -207,13 +215,19 @@ class WindowManager(object):
 
         win, _, winGeom, monitorID = self.getGeometries(window)
 
-        if monitorID is None:
-            return None
+        monitor_count = self._root.get_n_monitors()
 
-        if monitorID == 0:
-            newMonitorID = 1
-        else:
-            newMonitorID = (monitorID + 1) % self._root.get_n_monitors()
+        newMonitorID = monitorID
+        if dir == 'left':
+            if monitorID <= 0:
+                return
+            else:
+                newMonitorID -= 1
+        elif dir == 'right':
+            if monitorID + 1 == monitor_count:
+                return
+            else:
+               newMonitorID += 1
 
         newMonitorGeom = self._root.get_monitor_geometry(newMonitorID)
         logging.debug("Moving window to monitor %s", newMonitorID)
@@ -561,6 +575,7 @@ class QuickTileApp(object):
         @note: If you can make python-xlib's C{CatchError} actually work or if
                you can retrieve more information to show, feel free.
         """
+        from ipdb import set_trace; set_trace()
         if isinstance(err, BadAccess):
             self.keybinds_failed = True
         else:
