@@ -575,7 +575,6 @@ class QuickTileApp(object):
         @note: If you can make python-xlib's C{CatchError} actually work or if
                you can retrieve more information to show, feel free.
         """
-        from ipdb import set_trace; set_trace()
         if isinstance(err, BadAccess):
             self.keybinds_failed = True
         else:
